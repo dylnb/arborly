@@ -63,11 +63,11 @@
       (body-slice, children)
     }
 
-    let style-metadata = body-slice.find(is-metadata)
-    let style = if style-metadata != none {
-      style-metadata.value.at(1)
-    } else {
-      (:)
+    let style = (:)
+    for item in body-slice {
+      if is-metadata(item) {
+        style = merge-dictionary(style, item.value.at(1))
+      }
     }
 
     (body: body-slice.sum(default: none), children: children, style: style)
