@@ -10,4 +10,5 @@
   padding: 0.5em,
   name: none,
   fit: "tight",
+  frame: none,
 )

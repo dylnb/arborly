@@ -3,7 +3,7 @@
 
 #let tree = {
   import "defaults.typ"
-  import "@preview/cetz:0.3.4"
+  import "@preview/cetz:0.4.2"
   import cetz.util: merge-dictionary
 
   let trim(list) = {
@@ -328,6 +328,20 @@
     )
   }
 
+  let get-descendants(node, name) = {
+    let names = (name,)
+    for i in range(node.children.len()) {
+      let child = node.children.at(i)
+      let child-name = if child.style.name != none { 
+        child.style.name 
+      } else { 
+        name + "-" + str(i) 
+      }
+      names += get-descendants(child, child-name)
+    }
+    names
+  }
+
   // This uses a non-recursive approach to get around the depth limit
   // for very deep trees, but as a consequence is harder to read.
   let draw(
@@ -340,6 +354,8 @@
     let call-stack = ((node: node, y: y, name: name),)
     // Line elements are collected here and shown at the end, because they rely on element names that do not exist until later iterations of the call loop.
     let lines = ()
+    // Framed nodes also collected here to be shown at the end
+    let frames = ()
 
     while call-stack.len() > 0 {
       let (node: node, y: y, name: name) = call-stack.pop()
@@ -360,6 +376,10 @@
         padding: style.padding,
         name: name,
       )
+
+      if style.frame != none {
+        frames.push((node: node, name: name, args: style.frame))
+      }
 
       for i in range(children.len()) {
         let child = children.at(i)
@@ -416,6 +436,11 @@
     }
 
     lines.join()
+
+    for box-info in frames {
+      let descendants = get-descendants(box-info.node, box-info.name)
+      cetz.draw.rect-around(..descendants, ..box-info.args)
+    }
   }
 
   /// Generate a syntax tree
