@@ -56,7 +56,7 @@
           }
         }
         children.push(parse-recursive(children-slice.slice(1, child-closer)))
-
+        
         children-slice = trim(children-slice.slice(child-closer + 1))
       }
 
@@ -213,6 +213,9 @@
     (children, style, body-width, ..rest),
     horizontal-gap,
   ) = {
+    // Use local gap override if this node has a 'sep' style
+    let local-gap = if "sep" in style {style.sep} else {horizontal-gap}
+    
     // children = children.map(child => compute-horizontal-offset(child, horizontal-gap))
     let new-children = ()
     for child in children {
@@ -230,7 +233,7 @@
 
       let seps = ()
       for (left, right) in children.windows(2) {
-        seps.push(pair-offset(left, right, horizontal-gap: horizontal-gap))
+        seps.push(pair-offset(left, right, horizontal-gap: local-gap))
       }
       // NOTE: this is probably the heaviest section of code, being at least 4 layers of looping.
       for n in range(3, children.len() + 1) {
@@ -267,7 +270,7 @@
     } else {
       // END OF IF, START OF ELSE
 
-      let child-width = calc-child-width(children, horizontal-gap)
+      let child-width = calc-child-width(children, local-gap)
       width = if style.align == right and children.len() >= 1 {
         let right-chunk = right-chunk((children, body-width))
         let left-chunk = calc.max(body-width / 2, child-width - right-chunk)
@@ -310,7 +313,7 @@
       let new-children = ()
       for child in children {
         new-children.push(propagate-offset(child, difference + child.offset-from-left))
-        difference += child.width + horizontal-gap
+        difference += child.width + local-gap
       }
       children = new-children
     } // END OF ELSE
