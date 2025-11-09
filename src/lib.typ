@@ -1,8 +1,10 @@
 /// Used for adding attributes to nodes. See the Styling and Attributes section for more details.
 #let a(..args) = metadata(("arborly-metadata", args.named()))
 
+#import "defaults.typ"
+#let arborly-defaults = state("arborly-defaults", defaults.default-style)
+
 #let tree = {
-  import "defaults.typ"
   import "@preview/cetz:0.4.2"
   import cetz.util: merge-dictionary
 
@@ -90,7 +92,7 @@
     children = new-children
     // children = children.map(node => propagate-style(node, parent-style))
 
-    let fallback-style = merge-dictionary(defaults.default-style, parent-style)
+    let fallback-style = merge-dictionary(arborly-defaults.get(), parent-style)
 
     style = merge-dictionary(fallback-style, style)
 
@@ -100,7 +102,7 @@
         body = line(angle:90deg, length: style.padding + measure([dj]).height + style.padding,
                     stroke:style.child-lines.stroke)
       } else {
-        body = box(height:0pt, width:1cm)
+        body = box(height:0pt, width:3em)
       }
       style.padding = none
     }
