@@ -11,4 +11,5 @@
   name: none,
   fit: "tight",
   frame: none,
+  angle: none,
 )

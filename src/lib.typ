@@ -94,6 +94,17 @@
 
     style = merge-dictionary(fallback-style, style)
 
+    // Auto-remove padding for angle nodes with empty content
+    if style.angle != none and (body == none or body.func() == metadata){
+      if style.angle == 90deg {
+        body = line(angle:90deg, length: style.padding + measure([dj]).height + style.padding,
+                    stroke:style.child-lines.stroke)
+      } else {
+        body = box(height:0pt, width:1cm)
+      }
+      style.padding = none
+    }
+
     let body = {
       set text(bottom-edge: "baseline")
       set text(..style.text)
@@ -381,22 +392,29 @@
         frames.push((node: node, name: name, args: style.frame))
       }
 
+      let (voff, vgap) = if style.angle != none and children.len() > 1 {
+        let xo = calc.abs(children.first().offset.to-absolute().cm() - offset.to-absolute().cm())
+        (xo / calc.tan(style.angle), 0)
+      } else {
+        (0, vertical-gap.to-absolute().cm())
+      }
+
       for i in range(children.len()) {
         let child = children.at(i)
 
-        // Calculate the offset
+        // Calculate the vertical offset
+        let get-padding(st) = if st.padding == none {0cm} else {st.padding.to-absolute()}
         let DEFAULT_HEIGHT = measure([dj]).height
-        let average-height = (body-height + child.body-height) / 2
+        let average-height = (body-height + child.body-height) / 2 + get-padding(style) + get-padding(child.style)
         let snapped-height = if calc.abs(DEFAULT_HEIGHT - average-height) <= vertical-snapping-threshold.to-absolute() {
           DEFAULT_HEIGHT
         } else {
           average-height
         }
+        let child-y = y - voff - snapped-height.cm() - vgap
 
         let line-style = merge-dictionary(style.child-lines, child.style.parent-line)
 
-        let child-y = y - snapped-height.cm() - vertical-gap.to-absolute().cm()
-        // let child-y = y - snapped-height.cm()
         let child-name = if child.style.name != none { child.style.name } else { name + "-" + str(i) }
 
         call-stack.push((
@@ -413,6 +431,16 @@
               close: true,
               ..line-style,
             ),
+          )
+        } else if style.angle == 90deg {
+          lines.push(
+            cetz.draw.line(
+              // (rel:(y:3pt), to:(name:name, anchor:style.child-anchor)),
+              (name:name, anchor:style.child-anchor),
+              (name:child-name, anchor:child.style.parent-anchor),
+              (rel:(y:-3pt)),
+              ..line-style,
+            )
           )
         } else {
           lines.push(
