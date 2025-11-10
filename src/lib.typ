@@ -79,7 +79,18 @@
     parse-recursive(body.at("children", default: (body,)))
   }
 
-  let propagate-style((body, children, style, ..rest), parent-style) = {
+  let get-padding(st, side) = if st.padding == none { 0pt }
+    else if type(st.padding) == dictionary {
+      st.padding.at(side, default:
+        st.padding.at("y", default:
+          st.padding.at("rest", default:
+            0pt))).to-absolute()
+    } else {
+      st.padding.to-absolute()
+    }
+
+
+  let propagate-style((body, children, style, ..rest), parent-style, root:false) = {
     // update the parent-style for all children with inherited values
     if "inherit" in style.keys() {
       parent-style = merge-dictionary(parent-style, style.inherit)
@@ -96,21 +107,20 @@
 
     style = merge-dictionary(fallback-style, style)
 
-    // Auto-remove padding for angle nodes with empty content
+    // remove padding for angle nodes with empty content; format the rest
     if style.angle != none and (body == none or body.func() == metadata){
+      style.padding = none
       if style.angle == 90deg {
-        body = line(angle:90deg, length: style.padding + measure([dj]).height + style.padding,
-                    stroke:style.child-lines.stroke)
+        if not root { body = v(1.5em) }
       } else {
         body = box(height:0pt, width:3em)
       }
-      style.padding = none
-    }
-
-    let body = {
-      set text(bottom-edge: "baseline")
-      set text(..style.text)
-      align(style.align-content, body)
+    } else {
+      body = {
+        set text(bottom-edge: "baseline")
+        set text(..style.text)
+        align(style.align-content, body)
+      }
     }
 
     (
@@ -364,14 +374,15 @@
     vertical-snapping-threshold: none,
     vertical-gap: none,
   ) = {
-    let call-stack = ((node: node, y: y, name: name),)
+
+    let call-stack = ((node: node, y: y, root:true, name: name),)
     // Line elements are collected here and shown at the end, because they rely on element names that do not exist until later iterations of the call loop.
     let lines = ()
     // Framed nodes also collected here to be shown at the end
     let frames = ()
 
     while call-stack.len() > 0 {
-      let (node: node, y: y, name: name) = call-stack.pop()
+      let (node: node, y: y, root: root, name: name) = call-stack.pop()
       let (
         body,
         children,
@@ -383,8 +394,17 @@
 
       // START OF ACTUAL IMPLEMENTATION
       let name = if style.name != none { style.name } else { name }
+
+      // remove top padding from the root so it sits on the baseline
+      let top-adjustment = get-padding(style, "top").cm() / 2
+      if root and style.padding != none  {
+        if type(style.padding) == dictionary {style.padding += (top: 0pt)}
+        else {style.padding = (top: 0pt, rest: style.padding)}
+      }  
+
       cetz.draw.content(
-        (offset.to-absolute().cm(), y),
+        ( offset.to-absolute().cm(),
+          if root {y - top-adjustment} else {y} ),
         body,
         padding: style.padding,
         name: name,
@@ -404,24 +424,24 @@
       for i in range(children.len()) {
         let child = children.at(i)
 
-        // Calculate the vertical offset
-        let get-padding(st) = if st.padding == none {0cm} else {st.padding.to-absolute()}
+        // calculate the vertical offset
         let DEFAULT_HEIGHT = measure([dj]).height
-        let average-height = (body-height + child.body-height) / 2 + get-padding(style) + get-padding(child.style)
+        // treat padding as part of content height (looks better when sisters have different paddings)
+        let average-height = (body-height + child.body-height) / 2 + get-padding(style,"bottom") + get-padding(child.style, "top")
         let snapped-height = if calc.abs(DEFAULT_HEIGHT - average-height) <= vertical-snapping-threshold.to-absolute() {
           DEFAULT_HEIGHT
         } else {
           average-height
         }
+
         let child-y = y - voff - snapped-height.cm() - vgap
-
         let line-style = merge-dictionary(style.child-lines, child.style.parent-line)
-
         let child-name = if child.style.name != none { child.style.name } else { name + "-" + str(i) }
 
         call-stack.push((
           node: child,
           y: child-y,
+          root: false,
           name: child-name,
         ))
         if child.style.triangle {
@@ -437,10 +457,9 @@
         } else if style.angle == 90deg {
           lines.push(
             cetz.draw.line(
-              // (rel:(y:3pt), to:(name:name, anchor:style.child-anchor)),
               (name:name, anchor:style.child-anchor),
               (name:child-name, anchor:child.style.parent-anchor),
-              (rel:(y:-3pt)),
+              if child.body == none or child.body.func() == v { (rel:(y:-1.5em)) } else { (rel:(y:-3pt)) },
               ..line-style,
             )
           )
@@ -504,7 +523,7 @@
     body,
   ) = context {
     let node = parse(body)
-    let node = propagate-style(node, style)
+    let node = propagate-style(node, style, root:true)
     let node = compute-horizontal-offset(node, horizontal-gap)
 
     cetz.canvas({
