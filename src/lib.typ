@@ -108,12 +108,12 @@
     style = merge-dictionary(fallback-style, style)
 
     // remove padding for angle nodes with empty content; format the rest
-    if style.angle != none and (body == none or body.func() == metadata){
+    if style.angle != none and (body == none or body.func() in (metadata,place)){
       style.padding = none
       if style.angle == 90deg {
-        if not root { body = v(1.5em) }
+        if not root { body = {v(1.5em); body} }
       } else {
-        body = box(height:0pt, width:3em)
+        body = {box(height:0pt, width:3em); body}
       }
     } else {
       body = {
@@ -263,7 +263,7 @@
         for (i, window) in children.windows(n).enumerate() {
           let current-sep = seps.slice(i, i + n - 1).sum()
           let calculated-sep = pair-offset(window.first(), window.last())
-          if current-sep.to-absolute() < calculated-sep {
+          if current-sep.to-absolute() < calculated-sep.to-absolute() {
             let amortized-difference = (calculated-sep - current-sep) / (n - 1)
             for j in range(i, i + n - 1) {
               seps.at(j) += amortized-difference
@@ -486,9 +486,13 @@
 
     lines.join()
 
-    for box-info in frames {
-      let descendants = get-descendants(box-info.node, box-info.name)
-      cetz.draw.rect-around(..descendants, ..box-info.args)
+    for frame in frames {
+      let descendants = get-descendants(frame.node, frame.name)
+      if type(frame.args) == bool {
+        if frame.args {cetz.draw.rect-around(..descendants)}
+      } else {
+        cetz.draw.rect-around(..descendants, ..frame.args)
+      }
     }
   }
 
