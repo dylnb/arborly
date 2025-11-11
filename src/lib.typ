@@ -127,7 +127,7 @@
       body = {
         set text(bottom-edge: "baseline")
         set text(..style.text)
-        align(style.align-content, body)
+        align(style.align-content, (style.display)(body))
       }
     }
 
@@ -359,20 +359,6 @@
     )
   }
 
-  let get-descendants(node, name) = {
-    let names = (name,)
-    for i in range(node.children.len()) {
-      let child = node.children.at(i)
-      let child-name = if child.style.name != none { 
-        child.style.name 
-      } else { 
-        name + "-" + str(i) 
-      }
-      names += get-descendants(child, child-name)
-    }
-    names
-  }
-
   // This uses a non-recursive approach to get around the depth limit
   // for very deep trees, but as a consequence is harder to read.
   let draw(
@@ -492,8 +478,23 @@
       // END OF ACTUAL IMPLEMENTATION
     }
 
+    // draw the accumulated edges
     lines.join()
 
+    // draw the accumulated frames
+    let get-descendants(node, name) = {
+      let names = (name,)
+      for i in range(node.children.len()) {
+        let child = node.children.at(i)
+        let child-name = if child.style.name != none { 
+          child.style.name 
+        } else { 
+          name + "-" + str(i) 
+        }
+        names += get-descendants(child, child-name)
+      }
+      names
+    }
     for frame in frames {
       let descendants = get-descendants(frame.node, frame.name)
       if type(frame.args) == bool {

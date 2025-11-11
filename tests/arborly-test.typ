@@ -23,64 +23,88 @@
 
 == fixed angle tests
 
-#let t1(style) = {
-  tree(..style)[
-   [Blah]
+#let t1 = [
+ [aaa]
+ [
+  [ccccccc]
+  [
+  #sep(.5em)  
    [
-    [ccccccc]
     [
-     [D]
      [
-      [[Eeeeeeee #roof]]
-      [F]
+      [hhhh]
+      [iiiiiiii]
      ]
+     [bbbbb]
     ]
    ]
+   [
+    [[eeeeeeee #roof]]
+    [#text(ligatures:false)[fff]]
+   ]
   ]
-}
-#let t2(style) = {
-  tree(..style)[
-    #a(inherit:(text:(fill:blue)))
-    #a(leaves:(text:(fill:maroon))) // leaves supersede inherited attributes
-    S  
-    [xxxxxxx]  
-    [blah \ blah
-      [#rect(height:2cm, width:1cm)
-        [yy] [zz]
-      ]
-      [#rect(height:1cm, width:2cm)
-        [yy]
-        [#a(inherit:(sep:1em))
-         [
-          [
-           [a] 
-           [b]
-          ]
-          [c #a(text:(fill:olive))]
-         ]
-         [d]
-        ]
-      ]
+ ]
+]
+
+#grid(columns:3, column-gutter:4em, row-gutter:1cm,
+   tree(t1), tree(angle:60deg, t1), tree(angle:90deg, t1)
+ )
+
+== display tests
+
+#let t2 = [
+ S  
+ [xxxxxxx #a(text:(fill:gray))] //  display supersedes text if there's a conflict
+ [blah \ blah
+  [#rect(height:2em, width:1em)
+    [yy] [zz]
+  ]
+  [#rect(height:1em, width:2em)
+   #a(leaves:(display: text.with(blue))) // leaf attrs supersede inherited attrs
+   [yy]
+   [
+   #a(inherit:(sep:1em))
+    [
+     [
+      [a] 
+      [b]
+     ]
+     [cccc #a(display: text.with(maroon))] // local attrs supersede all others
     ]
+    [d]
+   ]
   ]
-}
+ ]
+]
 
 #grid(columns:3, column-gutter:2em, row-gutter:1cm,
-  t1((:)), t1((angle:60deg)), t1((angle:90deg)),
-  t2((:)), t2((angle:60deg)), t2((angle:90deg)),
- )
+  tree(t2, angle:60deg, display: text.with(red)),
+  tree(t2, angle:60deg, display: highlight),
+  tree(t2, angle:60deg, display: it => ellipse(inset:2pt, [_#{it}_]))
+)
 
 
 == branching tests
 
+#let body = [
+  S
+  [DP \ subj1]
+  [DP \ subj2]
+  [DP \ blah]
+  [VP [V \ verb] [DP \ obj]]
+]
+
 #grid(columns: 2, column-gutter:1cm, row-gutter:1cm)[
-1. #tree(sep:1cm)[S [DP \ subj1] [DP \ subj2] [DP \ blah] [VP [V \ verb] [DP \ obj]]]
+1. #tree(sep:.5em, body)
 ][
-2. #tree(angle:60deg)[S [DP \ subj1] [DP \ subj2] [DP \ blah] [VP [V \ verb] [DP \ obj]]]
+2. #tree(angle:60deg, body)
 ][
-3. #tree(angle:90deg)[S [DP \ subj1] [DP \ subj2] [DP \ blah] [VP [V \ verb] [DP \ obj]]]
+3. #tree(angle:90deg, body)
 ][
-4. #tree(angle:80deg)[S [DP #a(angle:50deg) [S [DP] [VP]] [S [DP] [VP]]] [DP \ subj2] [DP \ blah] [VP [V \ verb] [DP \ obj]]]
+4. #tree(angle:80deg)[
+  S
+  [DP #a(angle:50deg) [S [DP] [VP]] [S [DP] [VP]]]
+  [DP \ subj2] [DP \ blah] [VP [V \ verb] [DP \ obj]]]
 ]
 
 

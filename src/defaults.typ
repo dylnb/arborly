@@ -12,4 +12,5 @@
   fit: "tight",
   frame: none,
   angle: none,
+  display: it => it,
 )
