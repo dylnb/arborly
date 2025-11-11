@@ -94,21 +94,25 @@
    contentless(b) or (b.has("children") and b.children.all(contentless))
  }
 
-  let propagate-style((body, children, style, ..rest), parent-style, root:false) = {
+  let propagate-style((body, children, style, ..rest), parent-style, leaf-style:(:), root:false) = {
     // update the parent-style for all children with inherited values
     if "inherit" in style.keys() {
       parent-style = merge-dictionary(parent-style, style.inherit)
       style.remove("inherit")
     }
+    if "leaves" in style.keys() {
+      leaf-style = merge-dictionary(leaf-style, style.leaves)
+      style.remove("leaves")
+    }
     let new-children = ()
     for child in children {
-      new-children.push(propagate-style(child, parent-style))
+      new-children.push(propagate-style(child, parent-style, leaf-style:leaf-style))
     }
     children = new-children
     // children = children.map(node => propagate-style(node, parent-style))
 
     let fallback-style = merge-dictionary(arborly-defaults.get(), parent-style)
-
+    if children == () { fallback-style = merge-dictionary(fallback-style, leaf-style) }
     style = merge-dictionary(fallback-style, style)
 
     // adjust padding for angle nodes with empty content; format the rest

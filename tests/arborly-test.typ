@@ -25,7 +25,6 @@
 
 #let t1(style) = {
   tree(..style)[
-  #sep(3em)
    [Blah]
    [
     [ccccccc]
@@ -41,6 +40,8 @@
 }
 #let t2(style) = {
   tree(..style)[
+    #a(inherit:(text:(fill:blue)))
+    #a(leaves:(text:(fill:maroon))) // leaves supersede inherited attributes
     S  
     [xxxxxxx]  
     [blah \ blah
@@ -49,15 +50,13 @@
       ]
       [#rect(height:1cm, width:2cm)
         [yy]
-        [
-        #a(inherit:(sep:1em))
-        #a(name:"node")
+        [#a(inherit:(sep:1em))
          [
           [
            [a] 
            [b]
           ]
-          [c]
+          [c #a(text:(fill:olive))]
          ]
          [d]
         ]
