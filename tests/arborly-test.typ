@@ -48,7 +48,19 @@
         [yy] [zz]
       ]
       [#rect(height:1cm, width:2cm)
-        [yy] [zz]
+        [yy]
+        [
+        #a(inherit:(sep:1em))
+        #a(name:"node")
+         [
+          [
+           [a] 
+           [b]
+          ]
+          [c]
+         ]
+         [d]
+        ]
       ]
     ]
   ]

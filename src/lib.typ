@@ -89,6 +89,10 @@
       st.padding.to-absolute()
     }
 
+ let empty(b) = {
+   let contentless = it => it in (none, [ ]) or it.func() in (metadata, place)
+   contentless(b) or (b.has("children") and b.children.all(contentless))
+ }
 
   let propagate-style((body, children, style, ..rest), parent-style, root:false) = {
     // update the parent-style for all children with inherited values
@@ -107,13 +111,13 @@
 
     style = merge-dictionary(fallback-style, style)
 
-    // remove padding for angle nodes with empty content; format the rest
-    if style.angle != none and (body == none or body.func() in (metadata,place)){
-      style.padding = none
-      if style.angle == 90deg {
-        if not root { body = {v(1.5em); body} }
+    // adjust padding for angle nodes with empty content; format the rest
+    if style.angle != none and empty(body) {
+      if style.angle == 90deg and not root {
+        style.padding = .75em
       } else {
         body = {box(height:0pt, width:3em); body}
+        style.padding = none
       }
     } else {
       body = {
@@ -459,7 +463,7 @@
             cetz.draw.line(
               (name:name, anchor:style.child-anchor),
               (name:child-name, anchor:child.style.parent-anchor),
-              if child.body == none or child.body.func() == v { (rel:(y:-1.5em)) } else { (rel:(y:-3pt)) },
+              if empty(child.body) { (rel:(y:-1.5em)) } else { (rel:(y:-3pt)) },
               ..line-style,
             )
           )
