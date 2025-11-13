@@ -13,9 +13,9 @@
 
 // just a wrapper around #tree to style a little more ergonomically
 #let oldtree = tree
-#let tree(body, scale:100%, pos:center, code:none, vgap:.75em, snap:0pt, ..args) = {
+#let tree(body, scale:100%, pos:center, traversal:(ltr,ttb), code:none, vgap:.75em, snap:0pt, ..args) = {
   set text(size: scale * 1em)
-  let t = oldtree(body, style:args.named(), code:code,
+  let t = oldtree(body, style:args.named(), code:code, traversal:traversal,
                   vertical-gap:vgap, vertical-snapping-threshold:snap)
   align(pos, t)
 }
@@ -83,6 +83,18 @@
   tree(t2, angle:60deg, display: it => ellipse(inset:2pt, [_#{it}_]))
 )
 
+#let incr = _ => {counter("r").step(); context counter("r").display()}
+#stack(dir:ltr, spacing:2em,
+.. ((ltr,ttb), (ltr,btt), (rtl,ttb), (rtl,btt)).map(order => {
+  counter("r").update(0)
+  tree(traversal:order, display: incr)[
+    [ [] [] ]
+    [ [] [] ]
+  ]
+  }
+))
+  }
+))
 
 == branching tests
 
@@ -251,7 +263,7 @@ S
 
 == math tests
 
-#set-tree(child-lines:(stroke:(paint:black,thickness:1pt,dash:"dotted")))
+#set-tree(child-lines:(stroke:(paint:black,thickness:.5pt)))
 
 #let var = square(size:1em, fill: gradient.conic(..color.map.rainbow))
 #let t(ctx, ..args) = tree(code:mv("v","subj"), ..args)[
@@ -275,4 +287,59 @@ $
 =
 #t(scale:80%)[#tree[U [V [Y] [Z]] [X]]]
 $
+
+#stack(dir:ltr, spacing:2em,
+
+tree[
+ $forall x. thin P x$
+ [$forall x$]
+ [$mono(t) \ P x and Q x$
+  [$mono(t) \ Q x$
+   [$Q$]
+   [$x$]
+  ]
+  [$and$ \ and]
+  [$mono(t) \ P x$
+   [$P$]
+   [$x$]
+  ]
+ ]
+]
+,
+
+tree[
+ $ forall x. thin P x $
+ [$forall x$]
+ [$ mono(t) \ P x and Q x $
+  [$ mono(t) \ Q x $
+   [$Q$]
+   [$x$]
+  ]
+  [$and$ \ and]
+  [$ mono(t) \ P x $
+   [$P$]
+   [$x$]
+  ]
+ ]
+]
+,
+
+// doesn't work, sadly; can't delay evaluation of content
+tree(display: it => $ #it $)[
+ forall x. thin P x
+ [forall x]
+ [mono(t) \ P x and Q x
+  [mono(t) \ Q x
+   [Q]
+   [x]
+  ]
+  [and \ "and"]
+  [mono(t) \ P x
+   [P]
+   [x]
+  ]
+ ]
+]
+
+)
 

@@ -367,12 +367,15 @@
     name: "0",
     vertical-snapping-threshold: none,
     vertical-gap: none,
+    traversal: ()
   ) = {
 
     let call-stack = ((node: node, y: y, root:true, name: name),)
-    // Line elements are collected here and shown at the end, because they rely on element names that do not exist until later iterations of the call loop.
+
+    // Tree graphical elements assembled and collected first, then shown at the end
+    // This allows evaluation order control and ensures anchor names created before referenced by edges/frames
+    let nodes = ()
     let lines = ()
-    // Framed nodes also collected here to be shown at the end
     let frames = ()
 
     while call-stack.len() > 0 {
@@ -396,12 +399,14 @@
         else {style.padding = (top: 0pt, rest: style.padding)}
       }  
 
-      cetz.draw.content(
-        ( offset.to-absolute().cm(),
-          if root {y - top-adjustment} else {y} ),
-        body,
-        padding: style.padding,
-        name: name,
+      nodes.push(
+        cetz.draw.content(
+          ( offset.to-absolute().cm(),
+            if root {y - top-adjustment} else {y} ),
+          body,
+          padding: style.padding,
+          name: name,
+        )  
       )
 
       if style.frame != none {
@@ -415,7 +420,8 @@
         (0, vertical-gap.to-absolute().cm())
       }
 
-      for i in range(children.len()) {
+      let order(l) = if traversal.fold(1, (p,d) => p * d.sign()) < 0 {l} else {l.rev()}
+      for i in order(range(children.len())) {
         let child = children.at(i)
 
         // calculate the vertical offset
@@ -478,6 +484,10 @@
       // END OF ACTUAL IMPLEMENTATION
     }
 
+    // draw the accumulated nodes
+    let order(l) = if btt in traversal {l.rev()} else {l}
+    order(nodes).join()
+
     // draw the accumulated edges
     lines.join()
 
@@ -527,6 +537,10 @@
     ///
     /// -> length
     horizontal-gap: 1.75em,
+    /// The order in which to process the nodes
+    ///
+    /// -> (dir, dir)
+    traversal: (ltr, ttb),
     /// A code block to be inserted into the cetz canvas after the syntax tree. It can be used for drawing arrows between nodes. Remember to name nodes using ```typ #a``` in order to reference them. See Styling and Arguments for more.
     ///
     code: none,
@@ -544,6 +558,7 @@
         node,
         vertical-snapping-threshold: vertical-snapping-threshold,
         vertical-gap: vertical-gap,
+        traversal: traversal
       )
       code
     })
