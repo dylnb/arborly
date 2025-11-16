@@ -127,7 +127,7 @@
       body = {
         set text(bottom-edge: "baseline")
         set text(..style.text)
-        align(style.align-content, (style.display)(body))
+        align(style.align-content, if style.display != none {(style.display)(body)} else {body})
       }
     }
 
@@ -484,12 +484,13 @@
       // END OF ACTUAL IMPLEMENTATION
     }
 
-    // draw the accumulated nodes
     let order(l) = if btt in traversal {l.rev()} else {l}
+
+    // draw the accumulated nodes
     order(nodes).join()
 
     // draw the accumulated edges
-    lines.join()
+    order(lines).join()
 
     // draw the accumulated frames
     let get-descendants(node, name) = {

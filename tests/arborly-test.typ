@@ -10,6 +10,11 @@
 // shorthands for specific attributes
 #let sep(amount) = a(sep: amount)
 #let roof = a(triangle: true)
+#let leaves(..args) = a(leaves: args.named())
+#let inherit(..args) = a(inherit: args.named())
+#let edge(n,..args) = a(parent-line: (name: n) + args.named())
+// place a label under a node
+#let lab(l, dy:.9em, ..args) = place(dy:dy, center, text(size:.7em, l))
 
 // just a wrapper around #tree to style a little more ergonomically
 #let oldtree = tree
@@ -60,7 +65,7 @@
     [yy] [zz]
   ]
   [#rect(height:1em, width:2em)
-   #a(leaves:(display: text.with(blue))) // leaf attrs supersede inherited attrs
+   #leaves(display: text.with(blue)) // leaf attrs supersede inherited attrs
    [yy]
    [
    #a(inherit:(sep:1em))
@@ -83,17 +88,50 @@
   tree(t2, angle:60deg, display: it => ellipse(inset:2pt, [_#{it}_]))
 )
 
-#let incr = _ => {counter("r").step(); context counter("r").display()}
-#stack(dir:ltr, spacing:2em,
-.. ((ltr,ttb), (ltr,btt), (rtl,ttb), (rtl,btt)).map(order => {
-  counter("r").update(0)
-  tree(traversal:order, display: incr)[
-    [ [] [] ]
-    [ [] [] ]
-  ]
+== traversal tests
+
+#let r = counter("r")
+#stack(dir:ltr, spacing:2.5em, ..
+  ((ltr,ttb, "preorder"),
+   (ltr,btt, "postorder"),
+   (rtl,ttb, "reverse preorder"),
+   (rtl,btt, "reverse postorder"))
+  .map(order => {
+    r.update(0) // reset the node counter
+    align(center, order.pop()) // show the label
+    tree(traversal:order, display: _ => {r.step(); context r.display()})[
+      [ [] [] ]
+      [ [] [] ]
+    ]
   }
-))
-  }
+  )
+)
+
+#v(1em)
+
+#let r = state("r",0)
+#stack(dir:ltr, spacing:.5em, ..
+  range(5).map(i => {
+    r.update(1) // reset the node counter
+    let tick(it) = context { // display function
+      r.update(n=>n+1)
+      let it = square(size:1em, inset:0pt, outset:1pt, align(center+horizon,it))
+      if r.get() < i {it} else if r.get() == i {text(red,it)} else {show text:hide; it}
+    }
+    tree(sep:1.3em, traversal:(btt, rtl), display:tick)[
+     #leaves(display:c=>c)
+     11 #lab($-$)
+     [18 #lab($times$)
+      [2] [9]
+     ]
+     [7 #lab($+$)
+      [4]
+      [3 #lab($-$)
+       [6] [3]
+      ]
+     ]
+    ]
+}
 ))
 
 == branching tests
@@ -107,7 +145,7 @@
 ]
 
 #grid(columns: 2, column-gutter:1cm, row-gutter:1cm)[
-1. #tree(sep:.5em, body)
+1. #tree(sep:2em, body)
 ][
 2. #tree(angle:60deg, body)
 ][
@@ -116,17 +154,11 @@
 4. #tree(angle:80deg)[
   S
   [DP #a(angle:50deg) [S [DP] [VP]] [S [DP] [VP]]]
-  [DP \ subj2] [DP \ blah] [VP [V \ verb] [DP \ obj]]]
+  [DP \ subj2] [DP \ blah] [VP #a(angle:40deg) [V \ verb] [DP \ obj]]]
 ]
 
 
 == cetz tests
-
-// name an edge for labeling or styling
-#let edge(n,..args) = a(parent-line: (name: n) + args.named())
-
-// place a label under a node
-#let lab(nm, dy:.9em, ..args) = place(dy:dy, center, text(size:.7em, nm))
 
 // draw a rectilinear arrow from one node to another
 #let mv(from, to, dy:-.6em, dx:0, dash:"solid", ..args) = {import cetz.draw:*
